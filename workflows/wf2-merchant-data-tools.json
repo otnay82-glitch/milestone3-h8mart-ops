@@ -1,0 +1,46 @@
+{
+  "name": "WF2 - Merchant Data Tools (STARTER)",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "717793d2-aee7-4761-ac61-7ad5ff5dcca7",
+        "authentication": "none",
+        "options": {}
+      },
+      "id": "5170ed3c-227c-478f-b4df-1c70700d79e6",
+      "name": "MCP Server Trigger",
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 1,
+      "position": [
+        260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "NEXT: Add exactly three parameterized read-only Postgres tools using mcp_reader: KPI Merchant, Alasan Batal, Status Stok. Connect them to this MCP Server Trigger. Never use h8mart superuser or ops_writer for these read-only tools.",
+        "height": 240,
+        "width": 360,
+        "color": 5
+      },
+      "id": "e12b40e7-c459-49bb-9817-97015f01d837",
+      "name": "Sticky Note - MCP tools required",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        540,
+        300
+      ]
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "versionId": "6e7be3b3-a86c-4c2c-beef-e9e93ed9db6d",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

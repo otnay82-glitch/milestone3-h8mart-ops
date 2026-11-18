@@ -1,0 +1,85 @@
+{
+  "name": "WF1-B - Penerimaan Pesanan (STARTER)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "order-created",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "47483ec3-c8f0-46f4-941b-f28df2dfeaf3",
+      "name": "Webhook - order.created",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "085560fc-7c5c-43a8-bacd-765880c4e949"
+    },
+    {
+      "parameters": {
+        "jsCode": "// STARTER ONLY. Implement PostgreSQL stock validation and idempotent order persistence.\n// Required event: order.created with order_id, customer_id, merchant_id, total_amount,\n// customer_note and items[{sku, qty}]. Return HTTP 409 if stock is insufficient.\n// Return HTTP 200 only after the order and order_items are safely persisted.\nreturn [{json:{status:\"NOT_CONFIGURED\",message:\"Stock validation and idempotent order persistence are not implemented.\",received:$json.body ?? $json}}];"
+      },
+      "id": "e48d2081-17e4-4610-9bd6-d79349fd983b",
+      "name": "TODO - Validate Event and Check Stock",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 501
+        }
+      },
+      "id": "4a564cf5-8158-4ebe-ba25-2d2fa3b5f935",
+      "name": "Respond to Webhook - setup required",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        760,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - order.created": {
+      "main": [
+        [
+          {
+            "node": "TODO - Validate Event and Check Stock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TODO - Validate Event and Check Stock": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook - setup required",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "versionId": "94dd7e5e-5dff-4ce9-ba24-04d115bc0d25",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

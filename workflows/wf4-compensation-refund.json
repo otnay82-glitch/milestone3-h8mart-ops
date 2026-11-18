@@ -1,0 +1,85 @@
+{
+  "name": "WF4 - Kompensasi & Refund (STARTER)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "delivery-late",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "a03be75c-7c1a-494d-81ae-d0de7672ae01",
+      "name": "Webhook - delivery.late",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        220,
+        220
+      ],
+      "webhookId": "6e4d778c-1d2e-4a19-a49c-43004ca0d751"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "order-failed",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "30d6ff43-2ac0-4f71-baf5-295c79ee76d0",
+      "name": "Webhook - order.failed",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        220,
+        440
+      ],
+      "webhookId": "5fdfcf89-a20d-4ec8-b117-dd5e34855efa"
+    },
+    {
+      "parameters": {
+        "jsCode": "// STARTER ONLY. Follow data-contract.md.\n// delivery.late: determine eligibility and voucher amount.\n// order.failed: if payment_status=captured, refund total_amount.\n// Use ops_writer; persist ops.compensations / ops.refund_actions.\n// Payment API calls require Idempotency-Key. Large refunds require Ops approval\n// through Telegram Send and Wait for Response (Approve/Decline) before payment.\nreturn [{json:{status:\"NOT_CONFIGURED\",message:\"Eligibility, approval, idempotency and Payment API are not implemented.\",event:$json.body?.event ?? \"unknown\",payload:$json.body ?? $json}}];"
+      },
+      "id": "48a3b6f6-dc26-46d3-b6c2-4a713a847169",
+      "name": "TODO - Compensation and Refund Logic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - delivery.late": {
+      "main": [
+        [
+          {
+            "node": "TODO - Compensation and Refund Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - order.failed": {
+      "main": [
+        [
+          {
+            "node": "TODO - Compensation and Refund Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "versionId": "724a1cce-8600-45b3-b3c6-d368f7bfbc77",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

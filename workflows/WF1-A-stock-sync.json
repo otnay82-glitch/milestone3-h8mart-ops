@@ -1,0 +1,788 @@
+{
+  "name": "WF1-A - Sinkronisasi Stok",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -992,
+        -240
+      ],
+      "id": "c6c8d0d9-e775-4cf8-af27-ae3bda6e2f27",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n    merchant_id,\n    COUNT(*) AS stock_rows,\n    MAX(synced_at) AS last_synced_at\nFROM core.merchant_stock\nGROUP BY merchant_id\nORDER BY merchant_id;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -800,
+        -240
+      ],
+      "id": "302e8952-c0fd-45db-9ee5-b11fa152466f",
+      "name": "Execute a SQL query",
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "6SxE5Ax8zAWae2SM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -608,
+        -240
+      ],
+      "id": "db3141e4-643f-47c9-94b9-1229c82d1e50",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst items = response.items ?? [];\n\nif (items.length === 0) {\n  return [{\n    json: {\n      merchant_id: response.merchant_id,\n      has_rows: false,\n      synced_at: response.as_of\n    }\n  }];\n}\n\nreturn items.map(item => ({\n  json: {\n    merchant_id: response.merchant_id,\n    sku: String(item.sku).toUpperCase(),\n    qty: Number(item.qty),\n    synced_at: response.as_of,\n    has_rows: true\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        -224
+      ],
+      "id": "2cfaf546-7a73-42de-898e-3d358109c89c",
+      "name": "Normalisasi Stok"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "value": "core",
+          "mode": "list",
+          "cachedResultName": "core"
+        },
+        "table": {
+          "__rl": true,
+          "value": "merchant_stock",
+          "mode": "list",
+          "cachedResultName": "merchant_stock"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "merchant_id": "={{ $json.merchant_id }}",
+            "qty": "={{ $json.qty }}",
+            "synced_at": "={{ $json.synced_at }}",
+            "product_id": "={{ $json.product_id }}"
+          },
+          "matchingColumns": [
+            "merchant_id",
+            "product_id"
+          ],
+          "schema": [
+            {
+              "id": "merchant_id",
+              "displayName": "merchant_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "product_id",
+              "displayName": "product_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "qty",
+              "displayName": "qty",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "synced_at",
+              "displayName": "synced_at",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        432,
+        16
+      ],
+      "id": "80d9e48c-4623-41b7-b6e5-2cf9a66fcb65",
+      "name": "Insert or update rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "41HF8TAfkz2RLrhu",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n    product_id,\n    UPPER(sku) AS sku\nFROM core.products\nORDER BY sku;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -992,
+        32
+      ],
+      "id": "c0e093a5-053d-45ae-9d1f-fe96fb761526",
+      "name": "Ambil Katalog Produk",
+      "credentials": {
+        "postgres": {
+          "id": "6SxE5Ax8zAWae2SM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "sku",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        256,
+        16
+      ],
+      "id": "e929419b-96ea-463e-ab2a-69bedd64d1c9",
+      "name": "Gabungkan Katalog"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO ops.sync_runs (\n    merchants_total,\n    merchants_ok,\n    rows_synced,\n    new_stockouts,\n    duration_ms\n)\nSELECT\n    (SELECT COUNT(*)\n     FROM core.merchants\n     WHERE active = true),\n\n    COUNT(DISTINCT merchant_id),\n\n    COUNT(*),\n\n    0,\n\n    (EXTRACT(EPOCH FROM (\n        NOW() - '{{ $('Schedule Trigger').first().json.timestamp }}'::timestamptz\n    )) * 1000)::integer\n\nFROM core.merchant_stock\nWHERE synced_at >= '{{ $('Schedule Trigger').first().json.timestamp }}'::timestamptz\n\nRETURNING *;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -432,
+        -352
+      ],
+      "id": "2e4a5059-d103-4007-9a10-347654c2f8aa",
+      "name": "Catat Sync Run",
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "41HF8TAfkz2RLrhu",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=http://mock-api:8080/merchants/{{$json.merchant_id}}/stock",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -432,
+        -144
+      ],
+      "id": "adc4f807-bcf2-4511-8e36-7b4195cfb402",
+      "name": "Ambil Stok Merchant API",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "QKaoR7TjLWeYrWoD",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO ops.dead_letter (\n    workflow,\n    node,\n    execution_id,\n    business_key,\n    error_message,\n    payload,\n    attempts,\n    status\n)\nVALUES (\n    $1, $2, $3, $4,\n    $5, $6::jsonb, $7, $8\n)\nRETURNING *;",
+        "options": {
+          "queryReplacement": "={{ [\n  $workflow.name,\n  \"Ambil Stok Merchant API\",\n  $execution.id,\n  $(\"Loop Over Items\").item.json.merchant_id,\n  $json.error?.message ?? JSON.stringify($json),\n  JSON.stringify($json),\n  1,\n  \"open\"\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -240,
+        -64
+      ],
+      "id": "b7b4d30a-e531-45f2-97ea-2592fcc8dfcb",
+      "name": "Catat Dead-Letter",
+      "credentials": {
+        "postgres": {
+          "id": "41HF8TAfkz2RLrhu",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://mock-api:8080/notify",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    channel: \"ops-alerts\",\n    title: \"Gagal Sinkronisasi Stok\",\n    text: `Workflow ${$json.workflow} gagal pada node ${$json.node}, merchant ${$json.business_key}. Error: ${$json.error_message}`\n  }\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -64,
+        -64
+      ],
+      "id": "27653861-97ec-41aa-a4d1-478bc2e816dc",
+      "name": "Alert Merchant Gagal",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "QKaoR7TjLWeYrWoD",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "0d330dfc-aea8-41b6-b1be-b6e8850b7900",
+              "leftValue": "={{ $json.has_rows }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        -16,
+        -224
+      ],
+      "id": "02960b42-90ba-452e-bfac-bfb52ae15643",
+      "name": "Ada Baris Stok?"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Sinkronisasi stok gagal: API mengembalikan 0 baris data untuk merchant {{ $json.merchant_id }}. Proses dihentikan untuk mencegah data stok kosong dianggap berhasil."
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        208,
+        -208
+      ],
+      "id": "922621af-2c68-4ef6-91ac-994f700a9680",
+      "name": "Gagal: Sinkron 0 Baris"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "40508e70-3253-4384-8826-3552007c8717",
+              "leftValue": "={{ $json.duration_ms }}",
+              "rightValue": 10000,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        -240,
+        -352
+      ],
+      "id": "73cf28ce-3fda-4138-b32c-1747de1539d1",
+      "name": "Terlalu Lambat?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://mock-api:8080/notify",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"ops-alerts\",\n  \"title\": \"Sinkronisasi Stok Lambat\",\n  \"text\": \"Sinkronisasi stok membutuhkan waktu {{$json.duration_ms}} ms. Merchant berhasil: {{$json.merchants_ok}} dari {{$json.merchants_total}}. Baris stok: {{$json.rows_synced}}.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -16,
+        -496
+      ],
+      "id": "d8b2b4cc-05f8-44b3-9f3c-6396c72d3c1d",
+      "name": "Alert Perlambatan",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "QKaoR7TjLWeYrWoD",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "http://uptime-kuma:3001/api/push/Iz0cxEKRWSqRBqPw3s23gGHxoPh77tmr?status=up&msg=OK&ping=",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        208,
+        -368
+      ],
+      "id": "9a10f9ed-9788-40c2-b3a8-e231632b1d78",
+      "name": "Heartbeat Uptime Kuma"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n    merchant_id,\n    product_id,\n    qty AS previous_qty\nFROM core.merchant_stock;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -848,
+        -640
+      ],
+      "id": "fb1facf6-abea-4d1a-85d6-f86fee3667f8",
+      "name": "Ambil Stok Sebelumnya",
+      "credentials": {
+        "postgres": {
+          "id": "6SxE5Ax8zAWae2SM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "merchant_id,product_id",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        416,
+        -624
+      ],
+      "id": "07c0437d-8bdb-4ef9-930d-a0144f06a351",
+      "name": "Bandingkan Stok Lama dan Baru"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n    merchant_id,\n    product_id,\n    qty AS latest_qty\nFROM core.merchant_stock;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -240,
+        -544
+      ],
+      "id": "34d44297-3e21-4e17-a656-f9f9c1010d1f",
+      "name": "Ambil Stok Terbaru",
+      "credentials": {
+        "postgres": {
+          "id": "6SxE5Ax8zAWae2SM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "84a84998-2aee-4c92-a766-8a36e12a8623",
+              "leftValue": "={{ $json.latest_qty }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "520dd8ad-e4b3-45ce-ace2-a8ab63eafe79",
+              "leftValue": "={{ $json.previous_qty }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        640,
+        -624
+      ],
+      "id": "529d993b-240d-455f-8913-e64e276dd140",
+      "name": "Ada Produk Habis Baru?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://mock-api:8080/notify",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"ops-alerts\",\n  \"title\": \"Produk Habis Baru\",\n  \"text\": \"Stok produk habis: Merchant {{$json.merchant_id}}, Product {{$json.product_id}}. Stok sebelumnya: {{$json.previous_qty}}, stok terbaru: {{$json.latest_qty}}.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        864,
+        -704
+      ],
+      "id": "13c41148-02c2-4e68-a157-dcbd75da4854",
+      "name": "Laporkan Produk Habis",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "QKaoR7TjLWeYrWoD",
+          "name": "Header Auth account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Ambil Stok Sebelumnya",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Catat Sync Run",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ambil Stok Merchant API",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Ambil Katalog Produk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalisasi Stok": {
+      "main": [
+        [
+          {
+            "node": "Ada Baris Stok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert or update rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ambil Katalog Produk": {
+      "main": [
+        [
+          {
+            "node": "Gabungkan Katalog",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Gabungkan Katalog": {
+      "main": [
+        [
+          {
+            "node": "Insert or update rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ambil Stok Merchant API": {
+      "main": [
+        [
+          {
+            "node": "Normalisasi Stok",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Catat Dead-Letter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Catat Dead-Letter": {
+      "main": [
+        [
+          {
+            "node": "Alert Merchant Gagal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert Merchant Gagal": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ada Baris Stok?": {
+      "main": [
+        [
+          {
+            "node": "Gabungkan Katalog",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gagal: Sinkron 0 Baris",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Catat Sync Run": {
+      "main": [
+        [
+          {
+            "node": "Terlalu Lambat?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Ambil Stok Terbaru",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Terlalu Lambat?": {
+      "main": [
+        [
+          {
+            "node": "Alert Perlambatan",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Heartbeat Uptime Kuma",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Heartbeat Uptime Kuma",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ambil Stok Sebelumnya": {
+      "main": [
+        [
+          {
+            "node": "Bandingkan Stok Lama dan Baru",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ambil Stok Terbaru": {
+      "main": [
+        [
+          {
+            "node": "Bandingkan Stok Lama dan Baru",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Bandingkan Stok Lama dan Baru": {
+      "main": [
+        [
+          {
+            "node": "Ada Produk Habis Baru?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ada Produk Habis Baru?": {
+      "main": [
+        [
+          {
+            "node": "Laporkan Produk Habis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "699affd8-16da-4808-bf54-4b01909e2d84",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b7ddf8c94c8af542ba420ef38de28931e66df75e49ec89e24a18052f706522e8"
+  },
+  "nodeGroups": [],
+  "id": "66scqOgmE7XbqnKM",
+  "tags": []
+}

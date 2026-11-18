@@ -1,0 +1,20 @@
+﻿# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Credentials and private configuration
+credentials.json
+secrets.json
+
+# Dependencies and temporary files
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+
+# n8n exports containing credentials
+*-with-credentials.json

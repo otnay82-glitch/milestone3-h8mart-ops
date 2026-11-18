@@ -1,0 +1,61 @@
+{
+  "name": "WF1-C - Daily Digest (STARTER)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "id": "efa16d8d-a711-40ca-99cb-cc4a08ddb768",
+      "name": "Schedule - Daily 07:00 WIB",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// STARTER ONLY. Set workflow timezone to Asia/Jakarta.\n// Query core.data_info first and use hari_data_terakhir for all seeded metrics.\n// Calculate total orders, cancel rate, delivered orders and SLA 30 minutes.\n// Send digest to Telegram; optionally also POST to Mock Notification API.\nreturn [{json:{status:\"NOT_CONFIGURED\",message:\"KPI SQL, Telegram and Notification API are not configured.\",required_reference:\"core.data_info.hari_data_terakhir\"}}];"
+      },
+      "id": "8d590e22-dbb5-4a70-b4d6-9ffbc2f7bb18",
+      "name": "TODO - Build Daily Digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule - Daily 07:00 WIB": {
+      "main": [
+        [
+          {
+            "node": "TODO - Build Daily Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Jakarta"
+  },
+  "active": false,
+  "versionId": "5ef2010e-8293-46e4-a6c3-ad82fc641e4b",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

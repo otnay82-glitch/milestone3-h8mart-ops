@@ -1,0 +1,67 @@
+{
+  "name": "WF5 - Reliability & Monitoring (STARTER)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "3ac3ec24-6e78-4373-83cc-76b660918143",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// STARTER ONLY. Normalize Error Trigger payload.\n// Extract workflow, node, execution_id, timestamp, business_key (order_id/merchant_id),\n// error_message and payload. Insert ops.dead_letter using ops_writer and alert Telegram.\nconst e=$json;\nreturn [{json:{status:\"NOT_CONFIGURED\",workflow:e.workflow?.name ?? e.workflow?.id ?? \"unknown\",node:e.execution?.lastNodeExecuted ?? \"unknown\",execution_id:e.execution?.id ?? null,error_message:e.execution?.error?.message ?? e.error?.message ?? \"Unknown error\",original_error_payload:e}}];"
+      },
+      "id": "e3ac7f04-06fb-439d-8842-11dca01d3262",
+      "name": "TODO - Normalize Error and Business Key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "NEXT: connect PostgreSQL ops_writer INSERT into ops.dead_letter and Telegram Send Message alert. Include workflow, node, timestamp and business key. Assign WF5 as Error Workflow for WF1–WF4. Test retry, permanent failure and dead-letter evidence.",
+        "height": 240,
+        "width": 380,
+        "color": 5
+      },
+      "id": "8e08a3eb-4eb2-424d-b7b9-60c5fc2f774c",
+      "name": "Sticky Note - Configure central handling",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        780,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "TODO - Normalize Error and Business Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "versionId": "70f56148-7306-4ffb-b821-4c3f23a0ae2d",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

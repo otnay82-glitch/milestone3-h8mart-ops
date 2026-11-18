@@ -1,0 +1,85 @@
+{
+  "name": "WF3 - Asisten AI Merchant (STARTER)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "merchant-assistant",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ce4411b1-9f5f-4858-931e-8842c3f8e0af",
+      "name": "Webhook - Merchant Question",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        220,
+        300
+      ],
+      "webhookId": "89b45f24-5576-4512-a2d4-0db314f309d7"
+    },
+    {
+      "parameters": {
+        "jsCode": "// STARTER ONLY. Replace with AI Agent + OpenAI Chat Model (assignment label gpt-6-luna),\n// MCP Client Tool connected to WF2, Structured Output Parser, CS escalation guardrail,\n// and a fallback that does not crash the workflow.\n// Keep response contract: status, jawaban, data_dipakai, confidence, and alasan when escalated.\nreturn [{json:{status:\"eskalasi_cs\",jawaban:\"Asisten belum dikonfigurasi. Pertanyaan akan diteruskan ke Customer Service.\",data_dipakai:[],confidence:0,alasan:\"AI Agent dan MCP Client belum dikonfigurasi.\"}}];"
+      },
+      "id": "06455698-8980-4c9d-b892-3f40e86a68dc",
+      "name": "TODO - AI Agent, MCP Client and Guardrails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "03ebbcd5-6d89-4c08-8abe-9fecbbd4e9a7",
+      "name": "Respond to Webhook - JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        780,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - Merchant Question": {
+      "main": [
+        [
+          {
+            "node": "TODO - AI Agent, MCP Client and Guardrails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TODO - AI Agent, MCP Client and Guardrails": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook - JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "versionId": "d446c88b-1115-4773-b677-48a91d2cd127",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
